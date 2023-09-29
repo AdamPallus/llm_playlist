@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spotify Playlist Creator</title>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+          <p>{{ messages[0] }}</p>
+      {% endif %}
+    {% endwith %}
+    <form action="/" method="post">
+        <label>Spotify Username:</label>
+        <input type="text" name="spotify_username">
+        <br><br>
+        <label>Playlist Name:</label>
+        <input type="text" name="playlist_name">
+        <br><br>
+        <label>Tracks & Artists:</label>
+        <textarea name="tracks_artists" rows="15" cols="50"></textarea>
+        <br><br>
+        <input type="submit" value="Create Playlist">
+    </form>
+</body>
+</html>
