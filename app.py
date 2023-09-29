@@ -21,17 +21,25 @@ sp_oauth = SpotifyOAuth(
 def index():
     # If token info isn't in the session, redirect to Spotify authentication
     if not session.get('token_info'):
+        # Store the form data in the session before redirecting
+        if request.method == 'POST':
+            session['form_data'] = request.form
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
     
-    # If this is a POST request (i.e., form submission)
-    if request.method == 'POST':
+    # If this is a POST request or form data is stored in the session
+    if request.method == 'POST' or 'form_data' in session:
+        if 'form_data' in session:
+            form_data = session.pop('form_data')
+        else:
+            form_data = request.form
+
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
         spotify_username = user_info['id']
-        playlist_name = request.form['playlist_name']
-        tracks_artists_str = request.form['tracks_artists']
+        playlist_name = form_data['playlist_name']
+        tracks_artists_str = form_data['tracks_artists']
         tracks_artists = eval(tracks_artists_str)
         
         # Create a new playlist
@@ -54,13 +62,11 @@ def index():
 
     return render_template('index.html')
 
-
 @app.route('/callback')
 def callback():
     token_info = sp_oauth.get_access_token(request.args['code'])
     session['token_info'] = token_info
     return redirect(url_for('index'))
-
 
 if __name__ == '__main__':
     app.run(debug=False)
