@@ -37,6 +37,8 @@ def index():
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
+        print("Token Info:", token_info)
+        print("User Info:", user_info)
         spotify_username = user_info['id']
         playlist_name = form_data['playlist_name']
         tracks_artists_str = form_data['tracks_artists']
