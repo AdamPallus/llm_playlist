@@ -28,8 +28,8 @@ def index():
     if request.method == 'POST':
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
-
-        spotify_username = request.form['spotify_username']
+        user_info = sp.current_user()
+s       potify_username = user_info['id']
         playlist_name = request.form['playlist_name']
         tracks_artists_str = request.form['tracks_artists']
         tracks_artists = eval(tracks_artists_str)
