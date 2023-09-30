@@ -21,7 +21,7 @@ app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 
 # Initialize Flask-Session
 Session(app)
-
+print("[STATUS] Getting spotify OAuth")
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
@@ -43,6 +43,7 @@ def parse_tracks_artists(input_str):
 def index():
     # If token info isn't in the session, redirect to Spotify authentication
     if not session.get('token_info'):
+        print("[STATUS] no token, getting new token")
         # Store the form data in the session before redirecting
         if request.method == 'POST':
             session['form_data'] = request.form
@@ -56,6 +57,7 @@ def index():
         else:
             form_data = request.form
 
+        print("[STATUS] Setting up spotify session")
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
@@ -63,19 +65,23 @@ def index():
         print("User Info:", user_info)
         spotify_username = user_info['id']
         playlist_name = form_data['playlist_name']
+        
+        print("[STATUS] parsing tracks")
 
         tracks_artists_str = request.form['tracks_artists']
         tracks_artists = parse_tracks_artists(tracks_artists_str)
         if tracks_artists is None:
-            print('No artists parsed')
-            print(track_artists_str)
+            print('[STATUS] No artists parsed!')
+            if track_artists_str: print(track_artists_str)
             return render_template('index.html')
         
         # Create a new playlist
+        print("[STATUS] Creating Playlist")
         playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
         playlist_id = playlist['id']
 
         # Search for tracks and get their URIs
+        print("[STATUS] searching for songs!")
         track_uris = []
         for track, artist in tracks_artists:
             results = sp.search(q=f'track:{track} artist:{artist}', type='track', limit=1)
@@ -84,9 +90,10 @@ def index():
                 track_uris.append(items[0]['uri'])
 
         # Add tracks to the playlist
+        print(f"[STATUS] adding {len(track_uris)} songs to playlist!")
         sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
         
-        flash("Playlist created successfully!")
+        flash("{playlist_name} Playlist created successfully!")
         return redirect(url_for('index'))
 
     return render_template('index.html')
