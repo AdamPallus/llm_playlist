@@ -74,22 +74,32 @@
             margin-bottom: 20px;
         }
 
-        p.info {
-            margin-bottom: 20px;
-            font-style: italic;
+        /* Hover text */
+        .input-info {
+            position: relative;
         }
 
-        /* Hide the info paragraph by default */
-        p.info.hidden {
+        .input-info:hover .info-text {
+            display: block;
+        }
+
+        .info-text {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            width: 250px;
             display: none;
+            z-index: 1;
+            top: 100%;
+            left: 0;
         }
     </style>
 </head>
 
 <body>
     <h1>Adam's LLM Spotify Playlist Maker</h1>
-
-    <p class="info">To use this playlist maker, ask an LLM to suggest songs for you. When it provides the suggestions, make sure they are in the format of a Python list of tuples like: <code>[("song", "artist"), ...]</code>. Paste the suggestions below and create your playlist!</p>
 
     {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -100,18 +110,11 @@
         <label>Playlist Name:</label>
         <input type="text" name="playlist_name">
         <br><br>
-        <label>Tracks & Artists:</label>
-        <textarea name="tracks_artists" rows="15" cols="50" onfocus="showInfo()"></textarea>
+        <label class="input-info">Tracks & Artists<span class="info-text">To use this playlist maker, ask an LLM to suggest songs for you. When it provides the suggestions, make sure they are in the format of a Python list of tuples like: <code>[("song", "artist"), ...]</code>. Paste the suggestions below and create your playlist!</span></label>
+        <textarea name="tracks_artists" rows="15" cols="50"></textarea>
         <br><br>
         <input type="submit" value="Create Playlist">
     </form>
-
-    <script>
-        function showInfo() {
-            var infoParagraph = document.querySelector('.info');
-            infoParagraph.classList.add('hidden');
-        }
-    </script>
 </body>
 
 </html>
