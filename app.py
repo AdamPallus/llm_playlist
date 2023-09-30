@@ -24,13 +24,15 @@ app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 # Initialize Flask-Session
 Session(app)
 
-print("[STATUS] Getting spotify OAuth")
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
     redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI"),
     scope="playlist-modify-public"
 )
+
+
+
 
 def parse_tracks_artists(input_str):
     try:
@@ -54,6 +56,16 @@ def index():
             print("[STATUS] Form data stored in session")
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
+
+    token_info = session.get('token_info', {})
+    sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
+    user_info = sp.current_user()
+    
+    if 'display_name' not in session or 'profile_picture' not in session:
+        print("Token Info:", token_info)
+        print("User Info:", user_info)
+        session['display_name'] = user_info['display_name']
+        session['profile_picture'] = user_info['images'][0]['url'] if user_info['images'] else None     
     
     if session.get('token_info') and request.method == 'POST':
         print("[STATUS] Token found in session and POST request made")
@@ -70,11 +82,6 @@ def index():
         playlist_name = form_data['playlist_name']
         print('[STATUS] making playlist')
         
-        token_info = session.get('token_info', {})
-        sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
-        user_info = sp.current_user()
-        print("Token Info:", token_info)
-        print("User Info:", user_info)
         spotify_username = user_info['id']
 
         if 'tracks_artists' not in form_data:
