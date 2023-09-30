@@ -45,6 +45,7 @@ def parse_tracks_artists(input_str):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     print("[STATUS] Index route hit")
+    print("SESSION CONTENT:", session.items())
 
     if not session.get('token_info'):
         print("[STATUS] No token in session")
