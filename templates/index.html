@@ -78,6 +78,11 @@
             margin-bottom: 20px;
             font-style: italic;
         }
+
+        /* Hide the info paragraph by default */
+        p.info.hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -96,10 +101,17 @@
         <input type="text" name="playlist_name">
         <br><br>
         <label>Tracks & Artists:</label>
-        <textarea name="tracks_artists" rows="15" cols="50"></textarea>
+        <textarea name="tracks_artists" rows="15" cols="50" onfocus="showInfo()"></textarea>
         <br><br>
         <input type="submit" value="Create Playlist">
     </form>
+
+    <script>
+        function showInfo() {
+            var infoParagraph = document.querySelector('.info');
+            infoParagraph.classList.add('hidden');
+        }
+    </script>
 </body>
 
 </html>
