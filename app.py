@@ -64,14 +64,23 @@ def index():
         else:
             print("[STATUS] Form data present in session")
             form_data = session.pop('form_data')
+        if 'playlist_name' not in form_data:
+            flash("Must have a playlist name")
+            return render_template('index.html')
+        playlist_name = form_data['playlist_name']
         print('[STATUS] making playlist')
+        
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
         print("Token Info:", token_info)
         print("User Info:", user_info)
         spotify_username = user_info['id']
-        playlist_name = form_data['playlist_name']
+
+        if 'tracks_artists' not in form_data:
+            print('getting form data again from the session.. it got lost?')
+            form_data = session.pop('form_data')
+        
         
         print("[STATUS] Parsing tracks")
         tracks_artists_str = form_data['tracks_artists']
