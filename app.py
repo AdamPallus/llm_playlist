@@ -93,7 +93,7 @@ def index():
         print(f"[STATUS] adding {len(track_uris)} songs to playlist!")
         sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
         
-        flash("{playlist_name} Playlist created successfully!")
+        flash(f"{playlist_name} Playlist created successfully!")
         return redirect(url_for('index'))
 
     return render_template('index.html')
