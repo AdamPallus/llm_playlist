@@ -3,13 +3,22 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-
+from flask_session import Session
 # Load environment variables
 load_dotenv()
 
 # Set up the Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+# Configure Flask-Session
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
+
+# Initialize Flask-Session
+Session(app)
+
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
