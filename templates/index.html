@@ -2,6 +2,70 @@
 <html>
 <head>
     <title>Spotify Playlist Creator</title>
+    <style>
+        /* Universal Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #181818;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        /* Form Styling */
+        form {
+            background-color: #282828;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+            width: 60%;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background-color: #333;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        input[type="submit"] {
+            background-color: #1DB954; /* Spotify Green */
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #128740;
+        }
+
+        /* Messages */
+        p {
+            background-color: #E0245E; /* Error red */
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            width: 60%;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
     {% with messages = get_flashed_messages() %}
