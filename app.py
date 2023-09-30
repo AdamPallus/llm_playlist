@@ -60,7 +60,7 @@ def index():
     token_info = session.get('token_info', {})
     sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
     user_info = sp.current_user()
-    
+
     if 'display_name' not in session or 'profile_picture' not in session:
         print("Token Info:", token_info)
         print("User Info:", user_info)
@@ -118,7 +118,7 @@ def index():
         flash(f"{playlist_name} Playlist created successfully!")
         return redirect(url_for('index'))
 
-    return render_template('index.html')
+    return render_template('index.html', display_name=session['display_name'], profile_picture=session['profile_picture'])
 
 @app.route('/callback')
 def callback():
