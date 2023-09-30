@@ -61,7 +61,7 @@ def index():
         if 'form_data' not in session:
             print("[STATUS] Getting form data and adding to session")
             session['form_data'] = request.form.to_dict()
-        else:
+        if 'form_data' in session:
             print("[STATUS] Form data present in session")
             form_data = session.pop('form_data')
         if 'playlist_name' not in form_data:
