@@ -1,4 +1,5 @@
 import os
+import ast
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
@@ -26,6 +27,16 @@ sp_oauth = SpotifyOAuth(
     scope="playlist-modify-public"
 )
 
+def parse_tracks_artists(input_str):
+    try:
+        parsed_data = ast.literal_eval(input_str)
+        if isinstance(parsed_data, list) and all(isinstance(item, tuple) and len(item) == 2 for item in parsed_data):
+            return parsed_data
+    except (SyntaxError, ValueError):
+        pass
+    flash("Invalid input format. Please provide a list of tuples for tracks and artists.")
+    return None
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # If token info isn't in the session, redirect to Spotify authentication
@@ -50,8 +61,11 @@ def index():
         print("User Info:", user_info)
         spotify_username = user_info['id']
         playlist_name = form_data['playlist_name']
-        tracks_artists_str = form_data['tracks_artists']
-        tracks_artists = eval(tracks_artists_str)
+
+        tracks_artists_str = request.form['tracks_artists']
+        tracks_artists = parse_tracks_artists(tracks_artists_str)
+        if tracks_artists is None:
+            return render_template('index.html')
         
         # Create a new playlist
         playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
