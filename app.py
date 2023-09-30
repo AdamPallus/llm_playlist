@@ -72,7 +72,7 @@ def index():
         tracks_artists = parse_tracks_artists(tracks_artists_str)
         if tracks_artists is None:
             print('[STATUS] No artists parsed!')
-            if track_artists_str: print(track_artists_str)
+            if track_artists_str is not None: print(track_artists_str)
             return render_template('index.html')
         
         # Create a new playlist
