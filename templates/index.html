@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Spotify Playlist Creator</title>
+    <title>Adam's LLM Spotify Playlist Creator</title>
     <style>
         /* Universal Styling */
         body {
@@ -13,6 +14,12 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
         }
 
         /* Form Styling */
@@ -20,7 +27,7 @@
             background-color: #282828;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
             width: 60%;
         }
 
@@ -29,7 +36,8 @@
             margin-right: 10px;
         }
 
-        input[type="text"], textarea {
+        input[type="text"],
+        textarea {
             width: 100%;
             padding: 10px;
             border-radius: 5px;
@@ -57,7 +65,7 @@
         }
 
         /* Messages */
-        p {
+        p.message {
             background-color: #E0245E; /* Error red */
             padding: 10px;
             border-radius: 5px;
@@ -65,13 +73,23 @@
             width: 60%;
             margin-bottom: 20px;
         }
+
+        p.info {
+            margin-bottom: 20px;
+            font-style: italic;
+        }
     </style>
 </head>
+
 <body>
+    <h1>Adam's LLM Spotify Playlist Maker</h1>
+
+    <p class="info">To use this playlist maker, ask an LLM to suggest songs for you. When it provides the suggestions, make sure they are in the format of a Python list of tuples like: <code>[("song", "artist"), ...]</code>. Paste the suggestions below and create your playlist!</p>
+
     {% with messages = get_flashed_messages() %}
-      {% if messages %}
-          <p>{{ messages[0] }}</p>
-      {% endif %}
+    {% if messages %}
+    <p class="message">{{ messages[0] }}</p>
+    {% endif %}
     {% endwith %}
     <form action="/" method="post">
         <label>Playlist Name:</label>
@@ -83,4 +101,5 @@
         <input type="submit" value="Create Playlist">
     </form>
 </body>
+
 </html>
