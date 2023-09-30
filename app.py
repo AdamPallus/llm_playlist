@@ -67,6 +67,8 @@ def index():
         tracks_artists_str = request.form['tracks_artists']
         tracks_artists = parse_tracks_artists(tracks_artists_str)
         if tracks_artists is None:
+            print('No artists parsed')
+            print(track_artists_str)
             return render_template('index.html')
         
         # Create a new playlist
