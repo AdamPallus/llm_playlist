@@ -6,12 +6,14 @@ from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_session import Session
+
 # Load environment variables
 load_dotenv()
 
 # Set up the Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
 # Configure Flask-Session
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
@@ -21,6 +23,7 @@ app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 
 # Initialize Flask-Session
 Session(app)
+
 print("[STATUS] Getting spotify OAuth")
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
@@ -41,24 +44,14 @@ def parse_tracks_artists(input_str):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    print("Stored Token Info:", session.get('token_info'))
-    # If token info isn't in the session, redirect to Spotify authentication
     if not session.get('token_info'):
-        print("[STATUS] no token, getting new token")
-        # Store the form data in the session before redirecting
         if request.method == 'POST':
-            session['form_data'] = request.form
+            session['form_data'] = request.form.to_dict()
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
-    
-    # If this is a POST request or form data is stored in the session
-    if request.method == 'POST' or 'form_data' in session:
-        if 'form_data' in session:
-            form_data = session.pop('form_data')
-        else:
-            form_data = request.form
 
-        print("[STATUS] Setting up spotify session")
+    if session.get('token_info') and 'form_data' in session:
+        form_data = session.pop('form_data')
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
@@ -68,12 +61,11 @@ def index():
         playlist_name = form_data['playlist_name']
         
         print("[STATUS] parsing tracks")
-
-        tracks_artists_str = request.form['tracks_artists']
+        tracks_artists_str = form_data['tracks_artists']
         tracks_artists = parse_tracks_artists(tracks_artists_str)
+        
         if tracks_artists is None:
             print('[STATUS] No artists parsed!')
-            if track_artists_str is not None: print(track_artists_str)
             return render_template('index.html')
         
         # Create a new playlist
@@ -99,14 +91,11 @@ def index():
 
     return render_template('index.html')
 
-
 @app.route('/callback')
 def callback():
     token_info = sp_oauth.get_access_token(request.args['code'])
-    print("Token Info:", token_info)  # Debugging line
     session['token_info'] = token_info
     return redirect(url_for('index'))
-
 
 if __name__ == '__main__':
     app.run(debug=False)
