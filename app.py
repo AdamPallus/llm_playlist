@@ -44,13 +44,18 @@ def parse_tracks_artists(input_str):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    print("[STATUS] Index route hit")
+
     if not session.get('token_info'):
+        print("[STATUS] No token in session")
         if request.method == 'POST':
             session['form_data'] = request.form.to_dict()
+            print("[STATUS] Form data stored in session")
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
-
+    
     if session.get('token_info') and 'form_data' in session:
+        print("[STATUS] Token found in session and form data present")
         form_data = session.pop('form_data')
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
@@ -60,7 +65,7 @@ def index():
         spotify_username = user_info['id']
         playlist_name = form_data['playlist_name']
         
-        print("[STATUS] parsing tracks")
+        print("[STATUS] Parsing tracks")
         tracks_artists_str = form_data['tracks_artists']
         tracks_artists = parse_tracks_artists(tracks_artists_str)
         
@@ -74,7 +79,7 @@ def index():
         playlist_id = playlist['id']
 
         # Search for tracks and get their URIs
-        print("[STATUS] searching for songs!")
+        print("[STATUS] Searching for songs!")
         track_uris = []
         for track, artist in tracks_artists:
             results = sp.search(q=f'track:{track} artist:{artist}', type='track', limit=1)
@@ -83,7 +88,7 @@ def index():
                 track_uris.append(items[0]['uri'])
 
         # Add tracks to the playlist
-        print(f"[STATUS] adding {len(track_uris)} songs to playlist!")
+        print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
         sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
         
         flash(f"{playlist_name} Playlist created successfully!")
@@ -93,7 +98,9 @@ def index():
 
 @app.route('/callback')
 def callback():
+    print("[STATUS] Callback route hit")
     token_info = sp_oauth.get_access_token(request.args['code'])
+    print("Token Info from Callback:", token_info)
     session['token_info'] = token_info
     return redirect(url_for('index'))
 
