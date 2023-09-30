@@ -55,15 +55,16 @@ def index():
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
     
-    if session.get('token_info'):
+    if session.get('token_info') and request.method == 'POST':
+        print("[STATUS] Token found in session and POST request made")
 
-        if 'form_data' in session:
-            print("[STATUS] Token found in session and form data present")
-            form_data = session.pop('form_data')
+        if 'form_data' not in session:
+            print("[STATUS] Getting form data and adding to session")
+            session['form_data'] = request.form.to_dict()
         else:
-            print('[STATUS] Token found, getting form data')
-            form_data = request.form.to_dict()
-        
+            print("[STATUS] Form data present in session")
+            form_data = session.pop('form_data')
+        print('[STATUS] making playlist')
         token_info = session.get('token_info', {})
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
