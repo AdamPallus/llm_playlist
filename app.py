@@ -41,6 +41,7 @@ def parse_tracks_artists(input_str):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    print("Stored Token Info:", session.get('token_info'))
     # If token info isn't in the session, redirect to Spotify authentication
     if not session.get('token_info'):
         print("[STATUS] no token, getting new token")
@@ -98,11 +99,14 @@ def index():
 
     return render_template('index.html')
 
+
 @app.route('/callback')
 def callback():
     token_info = sp_oauth.get_access_token(request.args['code'])
+    print("Token Info:", token_info)  # Debugging line
     session['token_info'] = token_info
     return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
     app.run(debug=False)
