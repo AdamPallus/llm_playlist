@@ -139,10 +139,10 @@
     {% endif %}
     {% endwith %}
 
-    {% if display_name and profile_picture %}
+    {% if display_name or profile_picture %}
     <div class="user-profile">
-        <img src="{{ profile_picture }}" alt="Profile Picture" width="60" height="60">
-        <h2>{{ display_name }}</h2>
+        <img src="{{ profile_picture if profile_picture else 'https://via.placeholder.com/60'}}" alt="Profile Picture" width="60" height="60">
+        <h2>{{ display_name if display_name else "Mystery User" }}</h2>
     </div>
     {% endif %}
 
