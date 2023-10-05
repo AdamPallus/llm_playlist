@@ -132,5 +132,13 @@ def callback():
     session['token_info'] = token_info
     return redirect(url_for('index'))
 
+@app.route('/logout')
+def logout():
+    # Clear all session data
+    session.clear()
+
+    # Redirect to homepage or login page
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(debug=False)

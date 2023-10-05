@@ -113,6 +113,20 @@
         .user-profile h2 {
             font-size: 1.5em;
         }
+        .logout-button {
+            padding: 10px 20px;
+            background-color: #E0245E; /* Logout red */
+            color: #fff;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .logout-button:hover {
+            background-color: #C0204E; /* Darkened red for hover effect */
+        }
+
     </style>
 </head>
 
@@ -131,6 +145,10 @@
         <h2>{{ display_name }}</h2>
     </div>
     {% endif %}
+
+    <div style="margin: 20px;">
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
 
     <form action="/" method="post">
         <label>Playlist Name:</label>
