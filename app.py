@@ -58,8 +58,11 @@ def index():
         return redirect(auth_url)
 
     token_info = session.get('token_info', {})
-    sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
-    user_info = sp.current_user()
+    try:
+        sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
+        user_info = sp.current_user()
+    except: 
+        return(redirect(auth_url))
 
     if 'display_name' not in session or 'profile_picture' not in session:
         print("Token Info:", token_info)
