@@ -138,7 +138,7 @@ def logout():
     session.clear()
 
     # Redirect to homepage or login page
-    return redirect(url_for('index'))
+    return redirect("https://www.spotify.com/logout/")
 
 if __name__ == '__main__':
     app.run(debug=False)
