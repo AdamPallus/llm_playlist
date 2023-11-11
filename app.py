@@ -11,15 +11,18 @@ from flask_session import Session
 load_dotenv()
 
 # Set up the Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ['FLASK_SECRET_KEY']
+#app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
+
 
 # Configure Flask-Session
 #app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 #app.config['SESSION_REDIS'] = redis.StrictRedis.from_url(os.environ['REDIS_URL'])
-app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
+#app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 
 # Initialize Flask-Session
 Session(app)
@@ -44,9 +47,23 @@ def parse_tracks_artists(input_str):
     flash("Invalid input format. Please provide a list of tuples for tracks and artists.")
     return None
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    print("[STATUS] Index route hit")
+    """Homepage route."""
+    # Check if the user is already authenticated
+    if session.get('token_info'):
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
+
+@app.route('/login')
+def login():
+    """Route to initiate the Spotify OAuth process."""
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+@app.route('/dashboard', methods=['GET', 'POST'])
+def dashboard():
+    print("[STATUS] Dashboard route hit")
     print("SESSION CONTENT:", session.items())
 
     if not session.get('token_info'):
@@ -120,17 +137,20 @@ def index():
         sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
         
         flash(f"{playlist_name} Playlist created successfully!")
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
 
-    return render_template('index.html', display_name=session['display_name'], profile_picture=session['profile_picture'])
+    return render_template('dashboard.html', display_name=session['display_name'], profile_picture=session['profile_picture'])
 
 @app.route('/callback')
 def callback():
-    print("[STATUS] Callback route hit")
-    token_info = sp_oauth.get_access_token(request.args['code'])
-    print("Token Info from Callback:", token_info)
-    session['token_info'] = token_info
-    return redirect(url_for('index'))
+    try:
+        token_info = sp_oauth.get_access_token(request.args['code'])
+        session['token_info'] = token_info
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"Error in callback: {e}")
+        return str(e)  # For debugging purpose
+
 
 @app.route('/logout')
 def logout():
@@ -138,7 +158,7 @@ def logout():
     session.clear()
 
     # Redirect to homepage or login page
-    return redirect("https://www.spotify.com/logout/")
+    return redirect(url_for("index"))
 
 if __name__ == '__main__':
     app.run(debug=False)

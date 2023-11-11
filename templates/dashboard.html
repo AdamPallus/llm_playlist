@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Adam's LLM Spotify Playlist Creator</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <h1>Adam's LLM Spotify Playlist Maker</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <p class="message">{{ messages[0] }}</p>
+    {% endif %}
+    {% endwith %}
+
+    {% if display_name or profile_picture %}
+    <div class="user-profile">
+        <img src="{{ profile_picture if profile_picture else 'https://via.placeholder.com/60'}}" alt="Profile Picture" width="60" height="60">
+        <h2>{{ display_name if display_name else "Mystery User" }}</h2>
+    </div>
+    {% endif %}
+
+    <div style="margin: 20px;">
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+
+    <form action="/" method="post">
+        <label>Playlist Name:</label>
+        <input type="text" name="playlist_name">
+        <br><br>
+        <div class="input-info">
+            <label>Tracks & Artists</label>
+            <span class="info-text">To use this playlist maker, ask an LLM to suggest songs for you. When it provides the suggestions, make sure they are in the format of a Python list of tuples like: <code>[("song", "artist"), ...]</code>. Paste the suggestions below and create your playlist!</span>
+            <textarea name="tracks_artists" rows="15" cols="50"></textarea>
+        </div>
+        <br><br>
+        <input type="submit" value="Create Playlist">
+    </form>
+</body>
+
+</html>

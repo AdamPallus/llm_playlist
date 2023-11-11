@@ -1,0 +1,123 @@
+
+    /* Universal Styling */
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #181818;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+
+    /* Form Styling */
+    form {
+        background-color: #282828;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        width: 60%;
+    }
+
+    label {
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    input[type="text"],
+    textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #333;
+        background-color: #333;
+        color: #fff;
+        margin-top: 10px;
+    }
+
+    input[type="submit"] {
+        background-color: #1DB954; /* Spotify Green */
+        border: none;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        margin-top: 20px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #128740;
+    }
+
+    /* Messages */
+    p.message {
+        background-color: #E0245E; /* Error red */
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        width: 60%;
+        margin-bottom: 20px;
+    }
+
+    /* Hover text */
+    .input-info {
+        position: relative;
+    }
+
+    .input-info:hover .info-text {
+        display: block;
+    }
+
+    .info-text {
+        position: absolute;
+        background-color: #333;
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        width: 250px;
+        display: none;
+        z-index: 1;
+        top: 100%;
+        left: 0;
+    }
+
+    /* User Profile Styling */
+    .user-profile {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .user-profile img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+
+    .user-profile h2 {
+        font-size: 1.5em;
+    }
+    .logout-button {
+        padding: 10px 20px;
+        background-color: #E0245E; /* Logout red */
+        color: #fff;
+        text-decoration: none;
+        border-radius: 20px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+    .logout-button:hover {
+        background-color: #C0204E; /* Darkened red for hover effect */
+    }
