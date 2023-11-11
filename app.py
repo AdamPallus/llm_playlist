@@ -15,11 +15,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 
 # Configure Flask-Session
-app.config['SESSION_TYPE'] = 'redis'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.StrictRedis.from_url(os.environ['REDIS_URL'])
-app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
+# app.config['SESSION_TYPE'] = 'redis'
+# app.config['SESSION_PERMANENT'] = False
+# app.config['SESSION_USE_SIGNER'] = True
+# app.config['SESSION_REDIS'] = redis.StrictRedis.from_url(os.environ['REDIS_URL'])
+# app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 
 # Initialize Flask-Session
 Session(app)
