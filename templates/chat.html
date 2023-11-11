@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spotify Playlist Creator - Chat</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous"> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.0/dist/js.cookie.min.js"></script> 
+    <script> 
+        $(document).ready(function() { 
+            $('#prompt').keypress(function(event) { 
+                if (event.keyCode === 13 && !event.shiftKey) { 
+                    event.preventDefault(); 
+                    $('form').submit(); 
+                } 
+            }); 
+            $('form').on('submit', function(event) { 
+                event.preventDefault(); 
+                var csrftoken = Cookies.get('csrftoken'); 
+                $.ajaxSetup({ 
+                    headers: { 'X-CSRFToken': csrftoken } 
+                }); 
+                var prompt = $('#prompt').val(); 
+                var dateTime = new Date(); 
+                var time = dateTime.toLocaleTimeString(); 
+                $('#response').append('<div class="user-message">('+ time + ') <i class="bi bi-person"></i>: ' + prompt + '</div>'); 
+                $('#prompt').val(''); 
+                $.ajax({ 
+                    url: '/chat', 
+                    type: 'POST', 
+                    data: {prompt: prompt}, 
+                    dataType: 'json', 
+                    success: function(data) { 
+                        $('#response').append('<div class="bot-message">('+ time + ') <i class="bi bi-robot"></i>: ' + data.response + '</div>'); 
+                    } 
+                }); 
+            }); 
+        }); 
+    </script> 
+</head> 
+<body> 
+    <div class="container p-3 chat-container"> 
+        <h3>Chat with GPT Agent</h3> 
+        <div class="response-container"> 
+            <h6>Conversation:</h6> 
+            <div id="response"></div> 
+        </div> 
+        <div class="prompt-container"> 
+            <form method="post" action=""> 
+                <label for="prompt" class="form-label"><strong>Your Message:</strong></label> 
+                <textarea class="form-control" id="prompt" name="prompt" rows="3"></textarea> 
+                <br> 
+                <button class="btn btn-primary" type="submit">Send</button> 
+            </form> 
+        </div> 
+    </div> 
+</body> 
+</html>

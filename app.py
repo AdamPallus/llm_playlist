@@ -1,12 +1,12 @@
 import os
 import ast
 import spotipy
-import redis
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify 
 from flask_session import Session
 
+from openai import OpenAI
 # Load environment variables
 load_dotenv()
 
@@ -17,12 +17,9 @@ app.secret_key = os.environ['FLASK_SECRET_KEY']
 
 
 # Configure Flask-Session
-#app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-#app.config['SESSION_REDIS'] = redis.StrictRedis.from_url(os.environ['REDIS_URL'])
-#app.config['SESSION_KEY_PREFIX'] = 'spotify_playlist:'
 
 # Initialize Flask-Session
 Session(app)
@@ -34,7 +31,22 @@ sp_oauth = SpotifyOAuth(
     scope="playlist-modify-public"
 )
 
+client = OpenAI()
+chat_history = [{"role":"system","content":"You are an assistant tasked with helping people make a playlist of songs to listen to."}]
 
+def get_completion(prompt): 
+
+    chat_history.append({"role":"user","content":prompt})
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=chat_history
+    )
+    print(response)
+    output = response.choices[0].message.content
+    chat_history.append({"role":"assistant","content":output})
+
+    return output
 
 
 def parse_tracks_artists(input_str):
@@ -60,6 +72,18 @@ def login():
     """Route to initiate the Spotify OAuth process."""
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
+
+@app.route("/chat", methods=['POST', 'GET']) 
+def chat(): 
+    print("[STATUS] IN CHAT")
+    if request.method == 'POST': 
+        print('step1') 
+        prompt = request.form['prompt'] 
+        response = get_completion(prompt) 
+        print(response) 
+  
+        return jsonify({'response': response}) 
+    return render_template('chat.html') 
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -146,7 +170,7 @@ def callback():
     try:
         token_info = sp_oauth.get_access_token(request.args['code'])
         session['token_info'] = token_info
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('chat'))
     except Exception as e:
         print(f"Error in callback: {e}")
         return str(e)  # For debugging purpose
@@ -161,4 +185,4 @@ def logout():
     return redirect(url_for("index"))
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)

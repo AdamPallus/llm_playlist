@@ -121,3 +121,50 @@
     .logout-button:hover {
         background-color: #C0204E; /* Darkened red for hover effect */
     }
+
+    /* Chat Container Styles */
+.chat-container {
+    background-color: #282828;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#response {
+    height: 300px;
+    overflow-y: auto;
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.user-message, .bot-message {
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.user-message {
+    background-color: #128740; /* User message color */
+    float: left;
+    width: 90%;
+}
+
+.bot-message {
+    background-color: #1DB954; /* Bot message color */
+    float: right;
+    width: 90%;
+}
+
+textarea {
+    background-color: #333;
+    color: #fff;
+}
+
+.prompt-container {
+    margin-top: 20px;
+}
