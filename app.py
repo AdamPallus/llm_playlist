@@ -4,6 +4,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify 
+from flask import Response, stream_with_context
 from flask_session import Session
 
 from openai import OpenAI
@@ -34,19 +35,6 @@ sp_oauth = SpotifyOAuth(
 client = OpenAI()
 chat_history = [{"role":"system","content":"You are an assistant tasked with helping people make a playlist of songs to listen to."}]
 
-def get_completion(prompt): 
-
-    chat_history.append({"role":"user","content":prompt})
-
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=chat_history
-    )
-    print(response)
-    output = response.choices[0].message.content
-    chat_history.append({"role":"assistant","content":output})
-
-    return output
 
 
 def parse_tracks_artists(input_str):
@@ -73,17 +61,55 @@ def login():
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-@app.route("/chat", methods=['POST', 'GET']) 
-def chat(): 
-    print("[STATUS] IN CHAT")
-    if request.method == 'POST': 
-        print('step1') 
-        prompt = request.form['prompt'] 
-        response = get_completion(prompt) 
-        print(response) 
+# @app.route("/chat", methods=['POST', 'GET']) 
+# def chat(): 
+#     print("[STATUS] IN CHAT")
+#     if request.method == 'POST': 
+#         print('step1') 
+#         prompt = request.form['prompt'] 
+#         response = get_completion(prompt) 
+#         print(response) 
   
-        return jsonify({'response': response}) 
-    return render_template('chat.html') 
+#         return jsonify({'response': response}) 
+#     return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture']) 
+
+@app.route('/chat', methods=['GET'])
+def chat_page():
+    # Render the initial HTML page
+    return render_template('chat.html')  # Assuming the HTML file is named chat.html
+
+
+@app.route('/chat', methods=['POST'])
+def chat_stream():
+    def get_completion(prompt): 
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=chat_history,
+            stream=True
+        )
+        return(response)
+    def generate():
+        collected_messages=[]
+        prompt = request.json.get('prompt')
+        chat_history.append({"role":"user","content":prompt})
+        full_reply_content = ""
+        print(chat_history)
+        response = get_completion(prompt)
+        for chunk in response:
+            if getattr(chunk.choices[0], 'stop_reason', None) is not None:
+                break
+            if getattr(chunk.choices[0].delta,'content') is None:
+                break
+            chunk_message = chunk.choices[0].delta
+            full_reply_content += chunk_message.content
+            yield chunk_message.content.encode('utf-8')
+
+        collected_messages.append(chunk_message)
+        print("*****" + full_reply_content + "*******")
+        chat_history.append({"role":"assistant","content":full_reply_content})
+    return Response(stream_with_context(generate()), mimetype='text/plain')
+
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -169,8 +195,12 @@ def dashboard():
 def callback():
     try:
         token_info = sp_oauth.get_access_token(request.args['code'])
+        sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
+        user_info = sp.current_user()
         session['token_info'] = token_info
-        return redirect(url_for('chat'))
+        session['display_name'] = user_info['display_name']
+        session['profile_picture'] = user_info['images'][0]['url'] if user_info['images'] else None   
+        return redirect(url_for('chat_page'))
     except Exception as e:
         print(f"Error in callback: {e}")
         return str(e)  # For debugging purpose

@@ -1,44 +1,103 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Spotify Playlist Creator - Chat</title>
+    <title>Adam's LLM Spotify Playlist Creator</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous"> 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.0/dist/js.cookie.min.js"></script> 
-    <script> 
-        $(document).ready(function() { 
-            $('#prompt').keypress(function(event) { 
-                if (event.keyCode === 13 && !event.shiftKey) { 
-                    event.preventDefault(); 
-                    $('form').submit(); 
-                } 
-            }); 
-            $('form').on('submit', function(event) { 
-                event.preventDefault(); 
-                var csrftoken = Cookies.get('csrftoken'); 
-                $.ajaxSetup({ 
-                    headers: { 'X-CSRFToken': csrftoken } 
-                }); 
-                var prompt = $('#prompt').val(); 
-                var dateTime = new Date(); 
-                var time = dateTime.toLocaleTimeString(); 
-                $('#response').append('<div class="user-message">('+ time + ') <i class="bi bi-person"></i>: ' + prompt + '</div>'); 
-                $('#prompt').val(''); 
-                $.ajax({ 
-                    url: '/chat', 
-                    type: 'POST', 
-                    data: {prompt: prompt}, 
-                    dataType: 'json', 
-                    success: function(data) { 
-                        $('#response').append('<div class="bot-message">('+ time + ') <i class="bi bi-robot"></i>: ' + data.response + '</div>'); 
-                    } 
-                }); 
-            }); 
-        }); 
-    </script> 
-</head> 
-<body> 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+       $(document).ready(function() {
+    $('#prompt').keypress(function(event) {
+        if (event.keyCode === 13 && !event.shiftKey) {
+            event.preventDefault();
+            $('form').submit();
+        }
+    });
+
+    $('form').on('submit', function(event) {
+        event.preventDefault();
+        var userMessage = $('#prompt').val();
+        displayUserMessage(userMessage);
+        fetchStream(userMessage);
+        $('#prompt').val('');
+    });
+});
+
+
+    function fetchStream(prompt) {
+    fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({prompt: prompt})
+    })
+    .then(response => {
+        const reader = response.body.getReader();
+        return new ReadableStream({
+            start(controller) {
+                function push() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            controller.close();
+                            return;
+                        }
+                        const chunk = new TextDecoder().decode(value, {stream: true});
+                        updateChatUI(chunk);
+                        controller.enqueue(value);
+                        push();
+                    });
+                }
+                push();
+            }
+        });
+    })
+    .catch(err => console.error(err));
+}
+
+    var currentBotMessageId = null;
+
+    function displayUserMessage(message) {
+        var dateTime = new Date();
+        var time = dateTime.toLocaleTimeString();
+        var messageId = 'user-msg-' + dateTime.getTime(); // Unique ID for user message
+
+        $('#response').append('<div id="' + messageId + '" class="user-message">(' + time + ') <i class="bi bi-person"></i>: ' + message + '</div>');
+        currentBotMessageId = null; // Reset bot message ID for new response
+    }
+
+    function updateChatUI(chunk) {
+        var dateTime = new Date();
+        var time = dateTime.toLocaleTimeString();
+
+        if (!currentBotMessageId) {
+            currentBotMessageId = 'bot-msg-' + dateTime.getTime(); // Unique ID for bot message
+            $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message">(' + time + '): </div>');
+        }
+
+        $('#' + currentBotMessageId).append(chunk); // Append chunk to bot message container
+    }
+
+    </script>
+</head>
+<body>
+    <h1>Adam's LLM Spotify Playlist Maker</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <p class="message">{{ messages[0] }}</p>
+    {% endif %}
+    {% endwith %}
+
+    {% if display_name or profile_picture %}
+    <div class="user-profile">
+        <img src="{{ profile_picture if profile_picture else 'https://via.placeholder.com/60'}}" alt="Profile Picture" width="60" height="60">
+        <h2>{{ display_name if display_name else "Mystery User" }}</h2>
+    </div>
+    {% endif %}
+
+    <div style="margin: 20px;">
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+
     <div class="container p-3 chat-container"> 
         <h3>Chat with GPT Agent</h3> 
         <div class="response-container"> 
@@ -54,5 +113,5 @@
             </form> 
         </div> 
     </div> 
-</body> 
+</body>
 </html>

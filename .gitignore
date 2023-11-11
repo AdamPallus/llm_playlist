@@ -2,3 +2,4 @@
 .env
 spotify_playlist/
 flask_session/
+notebooks/
