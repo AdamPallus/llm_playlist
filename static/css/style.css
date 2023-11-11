@@ -132,7 +132,9 @@
 }
 
 #response {
-    height: 300px;
+    height: 300px; /* Fixed height */
+    width: 600px; /* Full width */
+    max-width: 600px; /* Maximum width */
     overflow-y: auto;
     background-color: #333;
     color: #fff;

@@ -33,7 +33,32 @@ sp_oauth = SpotifyOAuth(
 )
 
 client = OpenAI()
-chat_history = [{"role":"system","content":"You are an assistant tasked with helping people make a playlist of songs to listen to."}]
+
+system_instructions = """
+You are an AI assistant who is a musical genius. You love all types of music and are so excited to help people find songs they love.
+The goal of this conversation is to create a playlist for the user to listen to. If the conversation starts to go into other topics, 
+tell the user that you are only able to assist with music-related tasks. 
+You'll chat with the user and learn what kinds of songs they want, the duration/number of tracks for the playlist, 
+suggest a good title for the playlist and work with the user to refine it until the user agrees it's ready.
+
+Once the user agrees that the playlist is ready to create, instead of responding to the user, generate a JSON object
+
+The JSON object should be in the form
+{
+"playlist_title":"the title of the playlist"
+"songs": [
+
+{
+
+  "title": "first_song_title",
+
+  "artist": "first_song_artist"
+
+}, ...
+
+]}
+"""
+chat_history = [{"role":"system","content":system_instructions}]
 
 
 
@@ -78,38 +103,34 @@ def chat_page():
     # Render the initial HTML page
     return render_template('chat.html')  # Assuming the HTML file is named chat.html
 
-
 @app.route('/chat', methods=['POST'])
 def chat_stream():
     def get_completion(prompt): 
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            #model="gpt-3.5-turbo",
+            model="gpt-4-1106-preview",
             messages=chat_history,
             stream=True
         )
         return(response)
     def generate():
-        collected_messages=[]
         prompt = request.json.get('prompt')
-        chat_history.append({"role":"user","content":prompt})
-        full_reply_content = ""
-        print(chat_history)
+        chat_history.append({"role": "user", "content": prompt})
         response = get_completion(prompt)
+        
         for chunk in response:
+            # Check if delta exists and has content
+            if hasattr(chunk.choices[0], 'delta') and getattr(chunk.choices[0].delta, 'content', None):
+                chunk_message = chunk.choices[0].delta.content
+                yield chunk_message.encode('utf-8')
+
+            # Check if there is a stop reason to end the stream
             if getattr(chunk.choices[0], 'stop_reason', None) is not None:
                 break
-            if getattr(chunk.choices[0].delta,'content') is None:
-                break
-            chunk_message = chunk.choices[0].delta
-            full_reply_content += chunk_message.content
-            yield chunk_message.content.encode('utf-8')
 
-        collected_messages.append(chunk_message)
-        print("*****" + full_reply_content + "*******")
-        chat_history.append({"role":"assistant","content":full_reply_content})
     return Response(stream_with_context(generate()), mimetype='text/plain')
-
+    
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():

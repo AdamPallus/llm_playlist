@@ -5,6 +5,8 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+
     <script>
        $(document).ready(function() {
     $('#prompt').keypress(function(event) {
@@ -25,33 +27,47 @@
 
 
     function fetchStream(prompt) {
-    fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({prompt: prompt})
-    })
-    .then(response => {
-        const reader = response.body.getReader();
-        return new ReadableStream({
-            start(controller) {
-                function push() {
-                    reader.read().then(({ done, value }) => {
-                        if (done) {
-                            controller.close();
-                            return;
-                        }
-                        const chunk = new TextDecoder().decode(value, {stream: true});
-                        updateChatUI(chunk);
-                        controller.enqueue(value);
-                        push();
-                    });
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({prompt: prompt})
+        })
+        .then(response => {
+            const reader = response.body.getReader();
+            let completeChunk = '';
+
+            return new ReadableStream({
+                start(controller) {
+                    function push() {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                if (completeChunk) {
+                                    updateChatUI(completeChunk);
+                                }
+                                controller.close();
+                                return;
+                            }
+
+                            let chunkText = new TextDecoder().decode(value, {stream: true});
+                            completeChunk += chunkText;
+
+                            // Check for a chunk delimiter (e.g., newline) and process accordingly
+                            if (chunkText.endsWith('\n')) {
+                                updateChatUI(completeChunk);
+                                completeChunk = ''; // Reset for the next chunk
+                            }
+
+                            controller.enqueue(value);
+                            push();
+                        });
+                    }
+                    push();
                 }
-                push();
-            }
-        });
-    })
-    .catch(err => console.error(err));
-}
+            });
+        })
+        .catch(err => console.error(err));
+    }
+
 
     var currentBotMessageId = null;
 
@@ -60,7 +76,7 @@
         var time = dateTime.toLocaleTimeString();
         var messageId = 'user-msg-' + dateTime.getTime(); // Unique ID for user message
 
-        $('#response').append('<div id="' + messageId + '" class="user-message">(' + time + ') <i class="bi bi-person"></i>: ' + message + '</div>');
+        $('#response').append('<div id="' + messageId + '" class="user-message"> <i class="bi bi-person"></i>: ' + message + '</div>');
         currentBotMessageId = null; // Reset bot message ID for new response
     }
 
@@ -70,11 +86,14 @@
 
         if (!currentBotMessageId) {
             currentBotMessageId = 'bot-msg-' + dateTime.getTime(); // Unique ID for bot message
-            $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message">(' + time + '): </div>');
+            $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message"><i class="bi bi-robot"></i>:');
         }
 
-        $('#' + currentBotMessageId).append(chunk); // Append chunk to bot message container
+        var converter = new showdown.Converter();
+        var html = converter.makeHtml(chunk);
+        $('#' + currentBotMessageId).append(html); // Append chunk as HTML
     }
+
 
     </script>
 </head>
