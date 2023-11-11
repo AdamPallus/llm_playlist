@@ -12,7 +12,7 @@ load_dotenv()
 
 # Set up the Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+app.secret_key = os.environ['FLASK_SECRET_KEY']
 
 # Configure Flask-Session
 #app.config['SESSION_TYPE'] = 'redis'
