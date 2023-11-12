@@ -23,7 +23,7 @@
         fetchStream(userMessage);
         $('#prompt').val('');
     });
-});
+    });
 
 
     function fetchStream(prompt) {
@@ -86,7 +86,7 @@
 
         if (!currentBotMessageId) {
             currentBotMessageId = 'bot-msg-' + dateTime.getTime(); // Unique ID for bot message
-            $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message"><i class="bi bi-robot"></i>:');
+            $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message"><i class="bi bi-robot"></i>: </div>');
         }
 
         var converter = new showdown.Converter();
@@ -98,13 +98,10 @@
     </script>
 </head>
 <body>
-    <h1>Adam's LLM Spotify Playlist Maker</h1>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <p class="message">{{ messages[0] }}</p>
-    {% endif %}
-    {% endwith %}
+
+
+    <h1>Adam's LLM Spotify Playlist Maker</h1>
 
     {% if display_name or profile_picture %}
     <div class="user-profile">
@@ -113,24 +110,29 @@
     </div>
     {% endif %}
 
+    <div class="content-container">
+        <!-- Spotify Playlist Iframe -->
+        <div class="spotify-playlist-container">
+            <iframe src="{{ playlist_url }}" width="100%" height="500" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+        </div>
+
+
+        <div class="container p-3 chat-container"> 
+            <div class="response-container"> 
+                <div id="response"></div> 
+            </div> 
+            <div class="prompt-container"> 
+                <form method="post" action=""> 
+                    <label for="prompt" class="form-label"><strong>Your Message:</strong></label> 
+                    <textarea class="form-control" id="prompt" name="prompt" rows="3"></textarea> 
+                    <br> 
+                    <button class="btn btn-primary" type="submit">Send</button> 
+                </form> 
+            </div> 
+        </div> 
+    </div>
     <div style="margin: 20px;">
         <a href="/logout" class="logout-button">Logout</a>
     </div>
-
-    <div class="container p-3 chat-container"> 
-        <h3>Chat with GPT Agent</h3> 
-        <div class="response-container"> 
-            <h6>Conversation:</h6> 
-            <div id="response"></div> 
-        </div> 
-        <div class="prompt-container"> 
-            <form method="post" action=""> 
-                <label for="prompt" class="form-label"><strong>Your Message:</strong></label> 
-                <textarea class="form-control" id="prompt" name="prompt" rows="3"></textarea> 
-                <br> 
-                <button class="btn btn-primary" type="submit">Send</button> 
-            </form> 
-        </div> 
-    </div> 
 </body>
 </html>

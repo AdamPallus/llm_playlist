@@ -13,6 +13,7 @@ from openai import OpenAI
 load_dotenv()
 
 GPT_MODEL = "gpt-4-1106-preview" #"gpt-3.5-turbo",
+DEMO_PLAYLIST = "https://open.spotify.com/embed/playlist/6gcBbxehVQekJsRNOkzVLG"
 
 # Set up the Flask app
 app = Flask(__name__, static_folder='static')
@@ -134,7 +135,8 @@ def login():
 @app.route('/chat', methods=['GET'])
 def chat_page():
     # Render the initial HTML page
-    return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture'])
+    return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture'],
+    playlist_url=DEMO_PLAYLIST)
 
 @app.route('/chat', methods=['POST'])
 def chat_stream():

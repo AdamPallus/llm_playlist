@@ -170,3 +170,20 @@ textarea {
 .prompt-container {
     margin-top: 20px;
 }
+
+.content-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: start;
+    width: 100%;
+}
+
+.chat-container {
+    /* Adjust width as needed */
+    flex: 1;
+}
+
+.spotify-playlist-container {
+    /* Adjust width as needed */
+    width: 1; /* or other width */
+}
