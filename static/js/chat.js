@@ -49,15 +49,18 @@
         .then(response => {
             const reader = response.body.getReader();
             let completeChunk = '';
-
+            let isPlaylist = false;
             return new ReadableStream({
                 start(controller) {
                     function push() {
                         reader.read().then(({ done, value }) => {
                             if (done) {
                                 if (completeChunk) {
-                                    updateChatUI(completeChunk);
-                                    checkForPlaylistCreation(completeChunk);
+                                    isPlaylist = checkForPlaylistCreation(completeChunk)
+                                    if (!isPlaylist){
+                                        updateChatUI(completeChunk);
+                                    }
+                                    
                                 }
                                 controller.close();
                                 return;
@@ -68,8 +71,10 @@
 
                             // Check for a chunk delimiter (e.g., newline) and process accordingly
                             if (chunkText.endsWith('\n')) {
-                                updateChatUI(completeChunk);
-                                checkForPlaylistCreation(completeChunk);
+                                isPlaylist = checkForPlaylistCreation(completeChunk)
+                                    if (!isPlaylist){
+                                        updateChatUI(completeChunk);
+                                    }
                                 completeChunk = ''; // Reset for the next chunk
                             }
 
@@ -87,16 +92,15 @@
     function checkForPlaylistCreation(chunk) {
         // Example: Check if the chunk contains the specific token/pattern
         console.log(chunk)
-
+        // If the new playlist ID is available in the chunk, update the iframe
         if (chunk.includes("playlist_id")) {
             playlistId=chunk.split(':')[1]
             console.log("we found the ID!!")
             var iframeSrc = 'https://open.spotify.com/embed/playlist/' + playlistId;
             $('#spotify-iframe').attr('src', iframeSrc);
-            // If the new playlist ID is available in the chunk, update the iframe
-            // var newPlaylistId = extractPlaylistId(chunk);
-            // updatePlaylistIframe(newPlaylistId);
+            return true
         }
+        return(false)
     }
     var currentBotMessageId = null;
 
@@ -112,7 +116,6 @@
     function updateChatUI(chunk) {
         var dateTime = new Date();
         var time = dateTime.toLocaleTimeString();
-
         if (!currentBotMessageId) {
             currentBotMessageId = 'bot-msg-' + dateTime.getTime(); // Unique ID for bot message
             $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message"><i class="bi bi-robot"></i>: </div>');
