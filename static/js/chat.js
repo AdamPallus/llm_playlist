@@ -17,18 +17,28 @@
         if (welcomeMessage && welcomeMessage.role === "assistant") {
                     updateChatUI(welcomeMessage.content);
         }
+        //periodicallyCheckForNewPlaylist()
     });
 
     function periodicallyCheckForNewPlaylist() {
-    setInterval(function() {
-        $.get('/latest_playlist_id', function(data) {
-            if (data.playlist_id) {
-                var iframeSrc = 'https://open.spotify.com/embed/playlist/' + data.playlist_id;
-                $('#spotify-iframe').attr('src', iframeSrc);
-            }
-        });
-    }, 5000); // Check every 5 seconds, adjust timing as appropriate
-}
+        var currentPlaylistId = null; // Variable to store the current playlist ID
+    
+        setInterval(function() {
+            $.get('/latest_playlist_id', function(data) {
+                if (data.playlist_id && data.playlist_id !== currentPlaylistId) {
+                    // Update the currentPlaylistId
+                    currentPlaylistId = data.playlist_id;
+    
+                    // Build the new iframe src URL
+                    var iframeSrc = 'https://open.spotify.com/embed/playlist/' + data.playlist_id;
+    
+                    // Update the iframe src only if it's different
+                    $('#spotify-iframe').attr('src', iframeSrc);
+                }
+            });
+        }, 5000); // Check every 5 seconds, adjust timing as appropriate
+    }
+    
 
     function fetchStream(prompt) {
         fetch('/chat', {
@@ -47,6 +57,7 @@
                             if (done) {
                                 if (completeChunk) {
                                     updateChatUI(completeChunk);
+                                    checkForPlaylistCreation(completeChunk);
                                 }
                                 controller.close();
                                 return;
@@ -58,6 +69,7 @@
                             // Check for a chunk delimiter (e.g., newline) and process accordingly
                             if (chunkText.endsWith('\n')) {
                                 updateChatUI(completeChunk);
+                                checkForPlaylistCreation(completeChunk);
                                 completeChunk = ''; // Reset for the next chunk
                             }
 
@@ -72,7 +84,20 @@
         .catch(err => console.error(err));
     }
 
+    function checkForPlaylistCreation(chunk) {
+        // Example: Check if the chunk contains the specific token/pattern
+        console.log(chunk)
 
+        if (chunk.includes("playlist_id")) {
+            playlistId=chunk.split(':')[1]
+            console.log("we found the ID!!")
+            var iframeSrc = 'https://open.spotify.com/embed/playlist/' + playlistId;
+            $('#spotify-iframe').attr('src', iframeSrc);
+            // If the new playlist ID is available in the chunk, update the iframe
+            // var newPlaylistId = extractPlaylistId(chunk);
+            // updatePlaylistIframe(newPlaylistId);
+        }
+    }
     var currentBotMessageId = null;
 
     function displayUserMessage(message) {
@@ -97,3 +122,6 @@
         var html = converter.makeHtml(chunk);
         $('#' + currentBotMessageId).append(html); // Append chunk as HTML
     }
+
+
+

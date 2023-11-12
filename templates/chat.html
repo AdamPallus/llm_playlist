@@ -10,12 +10,11 @@
         var welcomeMessage = {{ welcome_message | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-
 </head>
 <body>
 
 
-    
+
     <h1>Adam's LLM Spotify Playlist Maker</h1>
 
     {% if display_name or profile_picture %}
@@ -28,7 +27,7 @@
     <div class="content-container">
         <!-- Spotify Playlist Iframe -->
         <div class="spotify-playlist-container">
-            <iframe src="{{ playlist_url }}" width="100%" height="500" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+            <iframe id="spotify-iframe" src= "{{ 'https://open.spotify.com/embed/playlist/' + playlist_url }}" width="100%" height="500" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
         </div>
 
 
