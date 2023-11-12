@@ -6,23 +6,29 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-b6lVK+yci+bfDmaY1u0zE8YYJt0TZxLEAFyYSLHId4xoVvsrQu3INevFKo+Xir8e" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
-
+    <script type="text/javascript">
+        var welcomeMessage = {{ welcome_message | tojson }};
+    </script>
     <script>
        $(document).ready(function() {
-    $('#prompt').keypress(function(event) {
-        if (event.keyCode === 13 && !event.shiftKey) {
-            event.preventDefault();
-            $('form').submit();
-        }
-    });
+        $('#prompt').keypress(function(event) {
+            if (event.keyCode === 13 && !event.shiftKey) {
+                event.preventDefault();
+                $('form').submit();
+            }
+        });
 
-    $('form').on('submit', function(event) {
-        event.preventDefault();
-        var userMessage = $('#prompt').val();
-        displayUserMessage(userMessage);
-        fetchStream(userMessage);
-        $('#prompt').val('');
-    });
+        $('form').on('submit', function(event) {
+            event.preventDefault();
+            var userMessage = $('#prompt').val();
+            displayUserMessage(userMessage);
+            fetchStream(userMessage);
+            $('#prompt').val('');
+        });
+        
+        if (welcomeMessage && welcomeMessage.role === "assistant") {
+                    updateChatUI(welcomeMessage.content);
+        }
     });
 
 
@@ -88,6 +94,8 @@
             currentBotMessageId = 'bot-msg-' + dateTime.getTime(); // Unique ID for bot message
             $('#response').append('<div id="' + currentBotMessageId + '" class="bot-message"><i class="bi bi-robot"></i>: </div>');
         }
+        
+        chunk = chunk.trim();
 
         var converter = new showdown.Converter();
         var html = converter.makeHtml(chunk);
@@ -118,6 +126,7 @@
 
 
         <div class="container p-3 chat-container"> 
+
             <div class="response-container"> 
                 <div id="response"></div> 
             </div> 

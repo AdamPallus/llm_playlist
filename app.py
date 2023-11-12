@@ -13,13 +13,12 @@ from openai import OpenAI
 load_dotenv()
 
 GPT_MODEL = "gpt-4-1106-preview" #"gpt-3.5-turbo",
-DEMO_PLAYLIST = "https://open.spotify.com/embed/playlist/6gcBbxehVQekJsRNOkzVLG"
+SPOTIFY_PLAYLIST_URL = "https://open.spotify.com/embed/playlist/"
+DEMO_PLAYLIST = "6gcBbxehVQekJsRNOkzVLG"
 
 # Set up the Flask app
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ['FLASK_SECRET_KEY']
-#app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
-
 
 # Configure Flask-Session
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -58,6 +57,10 @@ The JSON object should be in the form:
 }, ...
 
 ]}
+
+Don't render it with markdown, just the JSON
+
+Only give the JSON once the user agrees for you to make the playlist for them (we need permission)
 """
 chat_history = [{"role":"system","content":system_instructions}]
 
@@ -104,15 +107,16 @@ def add_playlist_to_spotify(playlist_JSON):
     print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
     sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
 
-
+    
 
 @app.route('/')
 def index():
     """Homepage route."""
     # Check if the user is already authenticated
     if session.get('token_info'):
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('logout'))
     return render_template('index.html')
+
 
 @app.route('/login')
 def login():
@@ -120,23 +124,12 @@ def login():
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-# @app.route("/chat", methods=['POST', 'GET']) 
-# def chat(): 
-#     print("[STATUS] IN CHAT")
-#     if request.method == 'POST': 
-#         print('step1') 
-#         prompt = request.form['prompt'] 
-#         response = get_completion(prompt) 
-#         print(response) 
-  
-#         return jsonify({'response': response}) 
-#     return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture']) 
-
 @app.route('/chat', methods=['GET'])
 def chat_page():
     # Render the initial HTML page
+    welcome_message = {"role": "assistant", "content": "Hey, I'd love to help you make a playlist!"}
     return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture'],
-    playlist_url=DEMO_PLAYLIST)
+    playlist_url=SPOTIFY_PLAYLIST_URL+DEMO_PLAYLIST, welcome_message = welcome_message)
 
 @app.route('/chat', methods=['POST'])
 def chat_stream():
@@ -166,7 +159,7 @@ def chat_stream():
                     if not finished:
                         print('[STATUS] creating JSON object!')
                         finished = True
-                        yield "Creating playlist...".encode('utf-8')
+                        yield "Playlist Created!".encode('utf-8')
                     else:
                         yield "".encode('utf-8')
                 else:
@@ -180,87 +173,6 @@ def chat_stream():
             add_playlist_to_spotify(playlist_JSON)
     return Response(stream_with_context(generate()), mimetype='text/plain')
     
-
-@app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
-    print("[STATUS] Dashboard route hit")
-    print("SESSION CONTENT:", session.items())
-
-    if not session.get('token_info'):
-        print("[STATUS] No token in session")
-        if request.method == 'POST':
-            session['form_data'] = request.form.to_dict()
-            print("[STATUS] Form data stored in session")
-        auth_url = sp_oauth.get_authorize_url()
-        return redirect(auth_url)
-
-    token_info = session.get('token_info', {})
-    try:
-        sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
-        user_info = sp.current_user()
-    except: 
-        auth_url = sp_oauth.get_authorize_url()
-        return(redirect(auth_url))
-
-    if 'display_name' not in session or 'profile_picture' not in session:
-        print("Token Info:", token_info)
-        print("User Info:", user_info)
-        session['display_name'] = user_info['display_name']
-        session['profile_picture'] = user_info['images'][0]['url'] if user_info['images'] else None     
-    
-    if session.get('token_info') and request.method == 'POST':
-        print("[STATUS] Token found in session and POST request made")
-
-        if 'form_data' not in session:
-            print("[STATUS] Getting form data and adding to session")
-            session['form_data'] = request.form.to_dict()
-        if 'form_data' in session:
-            print("[STATUS] Form data present in session")
-            form_data = session.pop('form_data')
-        if 'playlist_name' not in form_data:
-            flash("Must have a playlist name")
-            return render_template('index.html')
-        playlist_name = form_data['playlist_name']
-        print('[STATUS] making playlist')
-        
-        spotify_username = user_info['id']
-
-        if 'tracks_artists' not in form_data:
-            print('getting form data again from the session.. it got lost?')
-            form_data = session.pop('form_data')
-        
-        
-        print("[STATUS] Parsing tracks")
-        tracks_artists_str = form_data['tracks_artists']
-        tracks_artists = parse_tracks_artists(tracks_artists_str)
-        
-        if tracks_artists is None:
-            print('[STATUS] No artists parsed!')
-            return render_template('index.html')
-        
-        # Create a new playlist
-        print("[STATUS] Creating Playlist")
-        playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
-        playlist_id = playlist['id']
-
-        # Search for tracks and get their URIs
-        print("[STATUS] Searching for songs!")
-        track_uris = []
-        for track, artist in tracks_artists:
-            results = sp.search(q=f'track:{track} artist:{artist}', type='track', limit=1)
-            items = results['tracks']['items']
-            if items:
-                track_uris.append(items[0]['uri'])
-
-        # Add tracks to the playlist
-        print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
-        sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
-        
-        flash(f"{playlist_name} Playlist created successfully!")
-        return redirect(url_for('dashboard'))
-
-    return render_template('dashboard.html', display_name=session['display_name'], profile_picture=session['profile_picture'])
-
 @app.route('/callback')
 def callback():
     try:
