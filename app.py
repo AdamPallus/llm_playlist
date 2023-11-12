@@ -49,7 +49,8 @@ Once the user agrees that the playlist is ready to create, instead of responding
 The JSON object should be in the form:
 
 {
-"playlist_title":"the title of the playlist"
+"task":"CREATE_PLAYLIST",
+"playlist_title":"the title of the playlist",
 "songs": [
 {
   "title": "first_song_title",
@@ -58,34 +59,12 @@ The JSON object should be in the form:
 
 ]}
 
-Don't render it with markdown, just the JSON. And don't mention anything about JSON to the user.
+Don't mention anything about JSON to the user, they don't know what JSON is. Just say you're making the playlist.
 
-Only give the JSON once the user agrees for you to make the playlist for them (we need permission)
+Only give the JSON once the user agrees for you to make the playlist for them (we need permission).
 """
-system_instructions_debug = """
-You are an AI assistant who is a musical genius. You love all types of music and are so excited to help people find songs they love.
-The goal of this conversation is to create a playlist for the user to listen to. If the conversation starts to go into other topics, 
-tell the user that you are only able to assist with music-related tasks. 
-You'll chat with the user and learn what kinds of songs they want, the duration/number of tracks for the playlist, 
-suggest a good title for the playlist and work with the user to refine it until the user agrees it's ready.
 
-Once the user agrees that the playlist is ready to create, instead of responding to the user. generate a JSON object
-
-The JSON object should be in the form:
-
-{
-"playlist_title":"the title of the playlist"
-"songs": [
-{
-  "title": "first_song_title",
-  "artist": "first_song_artist"
-}, ...
-
-]}
-
-Don't render it with markdown, just the JSON. Assume any details needed to make the playlist with as litte talking as possible.
-"""
-chat_history = [{"role":"system","content":system_instructions_debug}]
+chat_history = [{"role":"system","content":system_instructions}]
 
 def extract_json(text):
     try:
@@ -130,29 +109,6 @@ def add_playlist_to_spotify(playlist_JSON):
     print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
     sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
     return playlist_id
-
-# @app.route('/latest_playlist_id')
-# def get_latest_playlist_id():
-#     print(f"session playlist: {session['playlist_id']}")
-#     return jsonify({'playlist_id': session['playlist_id']})
-@app.route('/test_update_session')
-def test_update_session():
-    session['playlist_id'] = 'test_id'
-    session.modified = True
-    return 'Session updated'
-
-@app.route('/test_get_session')
-def test_get_session():
-    return f"Playlist ID: {session.get('playlist_id', 'Not set')}"
-
-@app.route('/latest_playlist_id')
-def get_latest_playlist_id():
-    print(session.get('playlist_id', DEMO_PLAYLIST))
-    response = jsonify({'playlist_id': session.get('playlist_id', DEMO_PLAYLIST)})
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
 
 @app.route('/')
 def index():
@@ -201,7 +157,6 @@ def chat_stream():
         full_bot_response=""
         playlist_JSON = ""
         for chunk in response:
-            print(chunk)
             # Check if delta exists and has content
             if hasattr(chunk.choices[0], 'delta') and getattr(chunk.choices[0].delta, 'content', None):
                 chunk_message = chunk.choices[0].delta.content
@@ -211,7 +166,7 @@ def chat_stream():
                     if not generating_playlist:
                         print('[STATUS] creating JSON object!')
                         generating_playlist = True
-                        yield "Playlist Created!".encode('utf-8')
+                        yield "Playlist Created!\n".encode('utf-8')
                     else:
                         yield "".encode('utf-8')
                 else:
