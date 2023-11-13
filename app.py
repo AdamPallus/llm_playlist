@@ -251,6 +251,7 @@ def chat_stream():
             # Check if there is a stop reason to end the stream
             if getattr(chunk.choices[0], 'finish_reason', None) is not None:
                 print('finish_reason found')
+                print(full_bot_response)
                 if generating_playlist:
                     playlist = add_playlist_to_spotify(playlist_JSON)
                     print(f"NEW PLAYLIST: {playlist}")
