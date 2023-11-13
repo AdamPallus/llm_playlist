@@ -2,14 +2,19 @@ import os
 import ast
 import spotipy
 import json
+import requests
+import base64
+
+from PIL import Image
+from io import BytesIO
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify 
 from flask import Response, stream_with_context
 from flask_session import Session
-
 from openai import OpenAI
-# Load environment variables
+
+# Load environment variables from .env file
 load_dotenv()
 
 GPT_MODEL = "gpt-4-1106-preview" #"gpt-3.5-turbo",
@@ -32,8 +37,9 @@ sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
     redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI"),
-    scope="playlist-modify-public"
+    scope="playlist-modify-public ugc-image-upload"
 )
+
 
 client = OpenAI()
 
@@ -44,6 +50,10 @@ tell the user that you are only able to assist with music-related tasks.
 You'll chat with the user and learn what kinds of songs they want, the duration/number of tracks for the playlist, 
 suggest a good title for the playlist and work with the user to refine it until the user agrees it's ready.
 
+You can also ask the user to describe the kind of album cover art they think will go with the album,
+or you can make this up based on what you've learned about the user's preferences through the conversation. 
+Try to avoid anything that might be flagged as dangerous or inappropriate by the image generator.
+
 Once the user agrees that the playlist is ready to create, instead of responding to the user. generate a JSON object
 
 The JSON object should be in the form:
@@ -51,6 +61,7 @@ The JSON object should be in the form:
 {
 "task":"CREATE_PLAYLIST",
 "playlist_title":"the title of the playlist",
+"playlist_cover_art":"a detailed description of what the album cover should look like",
 "songs": [
 {
   "title": "first_song_title",
@@ -60,13 +71,68 @@ The JSON object should be in the form:
 ]}
 
 Don't mention anything about JSON to the user, they don't know what JSON is. Just say you're making the playlist.
+If the user does not want cover art, just set it to an empty string.
 
 Only give the JSON once the user agrees for you to make the playlist for them (we need permission).
+Don't tell the user you're ready to make a playlist, just start returning the JSON when ready.
 """
 
 chat_history = [{"role":"system","content":system_instructions}]
 
+def make_album_art(prompt, retries = 1):
+    print('requesting image from DALL-E')
+    def get_response(prompt):
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+            )
+        return(response)
+    try:
+        response = get_response(prompt)
+    except openai.OpenAIError as e:
+        print(e.error)
+        print(e.http_status)
+        print(e.error)
+        if retries>0:
+            print('retrying...')
+            retries-=1
+            try:
+                response = get_response(prompt)
+            except Exception as e:
+                print(e)
+                return("")
+
+    image_url = response.data[0].url
+    print(image_url)
+    encoded_jpg = encode_jpg(image_url)
+    return(encoded_jpg)
+
+
+def encode_jpg(url):    
+    # Download the image
+    response = requests.get(url)
+    image = Image.open(BytesIO(response.content))
+
+    # Convert the image to JPEG (if not already in this format)
+    if image.format != 'JPEG':
+        with BytesIO() as f:
+            image.save(f, format='JPEG')
+            image_jpeg = f.getvalue()
+    else:
+        image_jpeg = response.content
+
+    # Encode the image in base64
+    encoded_string = base64.b64encode(image_jpeg)
+
+    # Convert bytes to string for API usage
+    encoded_string = encoded_string.decode('utf-8')
+    return(encoded_string)
+
 def extract_json(text):
+    print(text)
     try:
         # Find the starting index of JSON structure
         start_index = text.find('{')
@@ -108,6 +174,16 @@ def add_playlist_to_spotify(playlist_JSON):
     # Add tracks to the playlist
     print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
     sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
+    playlist_cover_art = playlist_JSON.get('playlist_cover_art',"")
+    print(playlist_cover_art)
+    if  len(playlist_cover_art)>10:
+        print('[STATUS] Generating Album Art!')
+        try:
+            img_b64 = make_album_art(playlist_cover_art)
+            sp.playlist_upload_cover_image(playlist_id, img_b64)
+        except Exception as e:
+            print("failed to generate album art")
+            print(e)
     return playlist_id
 
 @app.route('/')
@@ -166,7 +242,7 @@ def chat_stream():
                     if not generating_playlist:
                         print('[STATUS] creating JSON object!')
                         generating_playlist = True
-                        yield "Playlist Created!\n".encode('utf-8')
+                        yield "Generating playlist...\n".encode('utf-8')
                     else:
                         yield "".encode('utf-8')
                 else:
