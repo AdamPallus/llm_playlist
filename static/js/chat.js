@@ -9,42 +9,27 @@
         $('form').on('submit', function(event) {
             event.preventDefault();
             var userMessage = $('#prompt').val();
+            addMessageToHistory(userMessage, 'user')
             displayUserMessage(userMessage);
-            fetchStream(userMessage);
+            fetchStream(chatHistory);
             $('#prompt').val('');
         });
         
         if (welcomeMessage && welcomeMessage.role === "assistant") {
                     updateChatUI(welcomeMessage.content);
         }
-        //periodicallyCheckForNewPlaylist()
     });
 
-    function periodicallyCheckForNewPlaylist() {
-        var currentPlaylistId = null; // Variable to store the current playlist ID
-    
-        setInterval(function() {
-            $.get('/latest_playlist_id', function(data) {
-                if (data.playlist_id && data.playlist_id !== currentPlaylistId) {
-                    // Update the currentPlaylistId
-                    currentPlaylistId = data.playlist_id;
-    
-                    // Build the new iframe src URL
-                    var iframeSrc = 'https://open.spotify.com/embed/playlist/' + data.playlist_id;
-    
-                    // Update the iframe src only if it's different
-                    $('#spotify-iframe').attr('src', iframeSrc);
-                }
-            });
-        }, 5000); // Check every 5 seconds, adjust timing as appropriate
+    function addMessageToHistory(message, role) {
+        chatHistory.push({ role: role, content: message });
+        // Update the UI or perform other actions as needed
     }
     
-
-    function fetchStream(prompt) {
+    function fetchStream(chatHistory) {
         fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({prompt: prompt})
+            body: JSON.stringify({chatHistory: chatHistory})
         })
         .then(response => {
             const reader = response.body.getReader();
@@ -56,11 +41,11 @@
                         reader.read().then(({ done, value }) => {
                             if (done) {
                                 if (completeChunk) {
+                                    addMessageToHistory(completeChunk, 'assistant')
                                     isPlaylist = checkForPlaylistCreation(completeChunk)
                                     if (!isPlaylist){
                                         updateChatUI(completeChunk);
                                     }
-                                    
                                 }
                                 controller.close();
                                 return;

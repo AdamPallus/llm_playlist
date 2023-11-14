@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <script type="text/javascript">
         var welcomeMessage = {{ welcome_message | tojson }};
+        var chatHistory = {{ initial_chat_history | tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </head>

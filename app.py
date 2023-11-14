@@ -77,8 +77,6 @@ Only give the JSON once the user agrees for you to make the playlist for them (w
 Don't tell the user you're ready to make a playlist, just start returning the JSON when ready.
 """
 
-chat_history = [{"role":"system","content":system_instructions}]
-
 def make_album_art(prompt, retries = 1):
     print('requesting image from DALL-E')
     def get_response(prompt):
@@ -156,10 +154,18 @@ def add_playlist_to_spotify(playlist_JSON):
         print("FAILED JSON EXTRACT")
         return
     print("MAKING PLAYLIST!")
-    sp = session['sp']
+    try: 
+        token_info = session.get('token_info')
+        sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
+        user_info = sp.current_user()
+    except:
+        print('Failed to get spotify token working')
+        auth_url = sp_oauth.get_authorize_url()
+        return redirect(auth_url)
+        
     playlist_name = playlist_JSON.get('playlist_title', "Generated Playlist")
     print(f'Playlist name: {playlist_name}')
-    user_info = session['user_info']
+
     spotify_username = user_info['id']
     playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
     playlist_id = playlist['id']
@@ -206,30 +212,29 @@ def chat_page():
     # Render the initial HTML page
     welcome_message = {"role": "assistant", "content": f"Hey {session['display_name'].split()[0]}, I'd love to help you make a playlist!"}
     session['welcome_message'] = welcome_message
-    if session['playlist_id'] is None:
-        playlist_url = DEMO_PLAYLIST
-    else:
-        paylist_url = session['playlist_url']
+    playlist_url = DEMO_PLAYLIST
+    initial_chat_history = [{"role": "system", "content": system_instructions}]
     return render_template('chat.html', display_name=session['display_name'], profile_picture=session['profile_picture'],
-    
-    playlist_url= playlist_url, welcome_message = welcome_message)
+                            playlist_url= playlist_url, welcome_message = welcome_message,
+                            initial_chat_history=initial_chat_history)
 
 @app.route('/chat', methods=['POST'])
 def chat_stream():
-    def get_completion(prompt): 
+    def get_completion(messages): 
         
         response = client.chat.completions.create(
             model = GPT_MODEL,
-            messages=chat_history,
+            messages=messages,
             stream=True
         )
         return(response)
     def generate():
-        prompt = request.json.get('prompt')
-        chat_history.append({"role": "user", "content": prompt})
-        response = get_completion(prompt)
+        data = request.json
+        chat_history = data['chatHistory']
+        print(chat_history)
+        response = get_completion(chat_history)
         
-        generating_playlist = False
+        generating_playlist = False #tracks when bot has decided to generate the playlist
         full_bot_response=""
         playlist_JSON = ""
         for chunk in response:
@@ -258,8 +263,6 @@ def chat_stream():
                     yield f"playlist_id:{playlist}".encode('utf-8')
                 else: 
                     break
-        chat_history.append({"role": "assistant", "content": full_bot_response})
-        
     return Response(stream_with_context(generate()), mimetype='text/plain')
     
 @app.route('/callback')
@@ -268,8 +271,6 @@ def callback():
         token_info = sp_oauth.get_access_token(request.args['code'])
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
-        session['sp'] = sp
-        session['user_info'] = user_info
         session['token_info'] = token_info
         session['display_name'] = user_info['display_name']
         session['profile_picture'] = user_info['images'][0]['url'] if user_info['images'] else None  
