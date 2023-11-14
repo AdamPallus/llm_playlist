@@ -106,6 +106,7 @@ def make_album_art(prompt, retries = 1):
     image_url = response.data[0].url
     print(image_url)
     encoded_jpg = encode_jpg(image_url)
+    #print(encoded_jpg)
     return(encoded_jpg)
 
 
@@ -170,6 +171,7 @@ def add_playlist_to_spotify(playlist_JSON):
     playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
     playlist_id = playlist['id']
     # Search for tracks and get their URIs
+    yield('Searching for songs!\n'.encode('utf-8'))
     print("[STATUS] Searching for songs!")
     track_uris = []
     for song in playlist_JSON['songs']:
@@ -179,18 +181,21 @@ def add_playlist_to_spotify(playlist_JSON):
             track_uris.append(items[0]['uri'])
     # Add tracks to the playlist
     print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
+    yield(f'Adding {len(track_uris)} songs to playlist!\n'.encode('utf-8'))
     sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
     playlist_cover_art = playlist_JSON.get('playlist_cover_art',"")
     print(playlist_cover_art)
     if  len(playlist_cover_art)>10:
+        yield('Generating Album Art!\n'.encode('utf-8'))
         print('[STATUS] Generating Album Art!')
         try:
             img_b64 = make_album_art(playlist_cover_art)
             sp.playlist_upload_cover_image(playlist_id, img_b64)
         except Exception as e:
+            yield('Sorry, the album art couldn''t be added...\n'.encode('utf-8'))
             print("failed to generate album art")
             print(e)
-    return playlist_id
+    yield f"playlist_id:{playlist_id}".encode('utf-8')
 
 @app.route('/')
 def index():
@@ -258,9 +263,8 @@ def chat_stream():
                 print('finish_reason found')
                 print(full_bot_response)
                 if generating_playlist:
-                    playlist = add_playlist_to_spotify(playlist_JSON)
-                    print(f"NEW PLAYLIST: {playlist}")
-                    yield f"playlist_id:{playlist}".encode('utf-8')
+                    #print(f"NEW PLAYLIST: {playlist}")
+                    yield from add_playlist_to_spotify(playlist_JSON)
                 else: 
                     break
     return Response(stream_with_context(generate()), mimetype='text/plain')
