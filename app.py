@@ -12,7 +12,8 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify 
 from flask import Response, stream_with_context
 from flask_session import Session
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
+from threading import Thread
 
 # Load environment variables from .env file
 load_dotenv()
@@ -77,7 +78,7 @@ Only give the JSON once the user agrees for you to make the playlist for them (w
 Don't tell the user you're ready to make a playlist, just start returning the JSON when ready.
 """
 
-def make_album_art(prompt, retries = 1):
+def make_album_art(playlist_cover_art,playlist_id,token_info):
     print('requesting image from DALL-E')
     def get_response(prompt):
         response = client.images.generate(
@@ -89,46 +90,46 @@ def make_album_art(prompt, retries = 1):
             )
         return(response)
     try:
-        response = get_response(prompt)
-    except openai.OpenAIError as e:
+        response = get_response(playlist_cover_art)
+    except OpenAIError as e:
         print(e.error)
         print(e.http_status)
         print(e.error)
-        if retries>0:
-            print('retrying...')
-            retries-=1
-            try:
-                response = get_response(prompt)
-            except Exception as e:
-                print(e)
-                return("")
+        return None
 
     image_url = response.data[0].url
+    print('image genrated successfully')
     print(image_url)
     encoded_jpg = encode_jpg(image_url)
-    #print(encoded_jpg)
-    return(encoded_jpg)
+    print('JPG encoded successfully')
+    try:
+        sp = spotipy.Spotify(auth=token_info['access_token'])
+        sp.playlist_upload_cover_image(playlist_id, encoded_jpg)
+        print("Cover added successfully!")
+    except Exception as e:
+        print(e)
 
 
-def encode_jpg(url):    
-    # Download the image
-    response = requests.get(url)
-    image = Image.open(BytesIO(response.content))
+def encode_jpg(url):
+    try:
+        # Download the image
+        response = requests.get(url)
+        image = Image.open(BytesIO(response.content))
 
-    # Convert the image to JPEG (if not already in this format)
-    if image.format != 'JPEG':
+        # Resize the image to 512x512
+        image = image.resize((512, 512))
+
+        # Convert the image to JPEG (if not already in this format)
         with BytesIO() as f:
             image.save(f, format='JPEG')
             image_jpeg = f.getvalue()
-    else:
-        image_jpeg = response.content
 
-    # Encode the image in base64
-    encoded_string = base64.b64encode(image_jpeg)
-
-    # Convert bytes to string for API usage
-    encoded_string = encoded_string.decode('utf-8')
-    return(encoded_string)
+        # Encode the image in base64
+        encoded_string = base64.b64encode(image_jpeg).decode('utf-8')
+        return encoded_string
+    except Exception as e:
+        print(f"Error in encode_jpg: {e}")
+        return None
 
 def extract_json(text):
     print(text)
@@ -170,6 +171,15 @@ def add_playlist_to_spotify(playlist_JSON):
     spotify_username = user_info['id']
     playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
     playlist_id = playlist['id']
+
+    playlist_cover_art = playlist_JSON.get('playlist_cover_art',"")
+    print(playlist_cover_art)
+    if  len(playlist_cover_art)>10:
+        yield('Generating Album Art!\n'.encode('utf-8'))
+        print('[STATUS] Generating Album Art!')
+        playlist_thread = Thread(target = make_album_art, args=(playlist_cover_art,playlist_id, token_info))
+        playlist_thread.start()
+
     # Search for tracks and get their URIs
     yield('Searching for songs!\n'.encode('utf-8'))
     print("[STATUS] Searching for songs!")
@@ -183,18 +193,7 @@ def add_playlist_to_spotify(playlist_JSON):
     print(f"[STATUS] Adding {len(track_uris)} songs to playlist!")
     yield(f'Adding {len(track_uris)} songs to playlist!\n'.encode('utf-8'))
     sp.playlist_add_items(playlist_id=playlist_id, items=track_uris)
-    playlist_cover_art = playlist_JSON.get('playlist_cover_art',"")
-    print(playlist_cover_art)
-    if  len(playlist_cover_art)>10:
-        yield('Generating Album Art!\n'.encode('utf-8'))
-        print('[STATUS] Generating Album Art!')
-        try:
-            img_b64 = make_album_art(playlist_cover_art)
-            sp.playlist_upload_cover_image(playlist_id, img_b64)
-        except Exception as e:
-            yield('Sorry, the album art couldn''t be added...\n'.encode('utf-8'))
-            print("failed to generate album art")
-            print(e)
+    
     yield f"playlist_id:{playlist_id}".encode('utf-8')
 
 @app.route('/')
