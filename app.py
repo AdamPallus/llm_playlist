@@ -23,15 +23,15 @@ DEMO_PLAYLIST = "6gcBbxehVQekJsRNOkzVLG"
 
 # Set up the Flask app
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.environ['FLASK_SECRET_KEY']
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
 # Configure Flask-Session
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
+#app.config['SESSION_TYPE'] = 'filesystem'
+#app.config['SESSION_PERMANENT'] = False
+#app.config['SESSION_USE_SIGNER'] = True
 
 # Initialize Flask-Session
-Session(app)
+#Session(app)
 
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
