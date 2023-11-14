@@ -272,7 +272,7 @@ def chat_stream():
 @app.route('/callback')
 def callback():
     try:
-        token_info = sp_oauth.get_access_token(request.args['code'])
+        token_info = sp_oauth.get_access_token(request.args['code'], check_cache=False)
         sp = spotipy.Spotify(auth=token_info['access_token'])  # Use the token to authenticate
         user_info = sp.current_user()
         session['token_info'] = token_info
