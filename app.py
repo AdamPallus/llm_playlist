@@ -62,6 +62,7 @@ The JSON object should be in the form:
 {
 "task":"CREATE_PLAYLIST",
 "playlist_title":"the title of the playlist",
+"playlist_description":"a very short description explaining what inspired this playlist"
 "playlist_cover_art":"a detailed description of what the album cover should look like",
 "songs": [
 {
@@ -166,13 +167,16 @@ def add_playlist_to_spotify(playlist_JSON):
         return redirect(auth_url)
         
     playlist_name = playlist_JSON.get('playlist_title', "Generated Playlist")
+    playlist_description = playlist_JSON.get('playlist_description',"")
     print(f'Playlist name: {playlist_name}')
+    print(f'Playlist description: {playlist_description}')
 
     spotify_username = user_info['id']
-    playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name)
+    playlist = sp.user_playlist_create(user=spotify_username, name=playlist_name, description=playlist_description)
     playlist_id = playlist['id']
 
     playlist_cover_art = playlist_JSON.get('playlist_cover_art',"")
+    
     print(playlist_cover_art)
     if  len(playlist_cover_art)>10:
         yield('Generating Album Art!\n'.encode('utf-8'))
